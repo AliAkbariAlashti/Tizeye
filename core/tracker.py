@@ -3,21 +3,24 @@ from utils.timer_utils import draw_timer
 
 class PersonTimerTracker:
     def __init__(self):
-        self.active_person = None
-        self.start_time = None
+        self.active_people = {}  # دیکشنری برای ذخیره افراد و زمان شروع
+        self.id_counter = 0  # برای اختصاص ID به افراد
 
     def update_and_draw(self, frame, people_boxes):
-        if len(people_boxes) > 0:
-            if self.active_person is None:
-                self.start_time = time.time()
-                self.active_person = people_boxes[0]
+        current_time = time.time()
+        new_active_people = {}
 
-            # فقط یک نفر را پیگیری می‌کنیم
-            elapsed = int(time.time() - self.start_time)
-            x, y, w, h = self.active_person
-            draw_timer(frame, (x, y, w, h), elapsed)
-        else:
-            self.active_person = None
-            self.start_time = None
+        for box in people_boxes:
+            # اختصاص ID جدید به فرد (ساده‌سازی شده)
+            person_id = self.id_counter
+            self.id_counter += 1
 
+            if person_id not in self.active_people:
+                self.active_people[person_id] = {'box': box, 'start_time': current_time}
+
+            new_active_people[person_id] = self.active_people[person_id]
+            elapsed = int(current_time - new_active_people[person_id]['start_time'])
+            draw_timer(frame, box, elapsed)
+
+        self.active_people = new_active_people
         return frame

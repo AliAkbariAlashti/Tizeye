@@ -1,19 +1,23 @@
+from ultralytics import YOLO
 import cv2
+import numpy as np
 
 class HumanDetector:
     def __init__(self):
-        self.hog = cv2.HOGDescriptor()
-        self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        self.model = YOLO("yolov8n.pt")  # مدل نانو برای سرعت و سبک بودن
 
     def detect(self, frame):
-        # resize for better speed
-        frame_resized = cv2.resize(frame, (640, 480))
-        boxes, _ = self.hog.detectMultiScale(frame_resized,
-                                             winStride=(8,8),
-                                             padding=(8,8),
-                                             scale=1.05)
-        # scale back coordinates
-        ratio_x = frame.shape[1] / 640
-        ratio_y = frame.shape[0] / 480
-        scaled_boxes = [(int(x*ratio_x), int(y*ratio_y), int(w*ratio_x), int(h*ratio_y)) for (x,y,w,h) in boxes]
-        return scaled_boxes
+        # تغییر اندازه به 416x416 برای سرعت بیشتر
+        frame_resized = cv2.resize(frame, (416, 416))
+        results = self.model(frame_resized, classes=[0], conf=0.5)  # فقط انسان (class 0)
+
+        boxes = []
+        for result in results:
+            for box in result.boxes:
+                x, y, w, h = box.xywh[0].cpu().numpy()
+                # مقیاس‌بندی مختصات به اندازه اصلی فریم
+                ratio_x = frame.shape[1] / 416
+                ratio_y = frame.shape[0] / 416
+                boxes.append((int(x * ratio_x), int(y * ratio_y), int(w * ratio_x), int(h * ratio_y)))
+
+        return boxes
