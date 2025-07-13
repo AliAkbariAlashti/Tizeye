@@ -1,0 +1,4 @@
+# تنظیمات کلی پروژه
+
+MIN_DETECTION_CONFIDENCE = 0.5
+LOGGING_ENABLED = True

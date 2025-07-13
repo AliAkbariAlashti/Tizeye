@@ -1,28 +1,42 @@
 import time
-from utils.timer_utils import draw_timer
+from utils.timer_utils import draw_timer, get_day_time_string
+from config.settings import LOGGING_ENABLED
+import cv2
+import os
+import csv
 
-class PersonTimerTracker:
+class PresenceTracker:
     def __init__(self):
-        self.active_people = {}  # دیکشنری برای ذخیره افراد و زمان شروع
-        self.id_counter = 0  # برای اختصاص ID به افراد
+        self.present = False
+        self.start_time = None
+        self.total_time = 0
 
-    def update_and_draw(self, frame, people_boxes):
+    def update(self, detected):
         current_time = time.time()
-        new_active_people = {}
 
-        # برای هر فرد شناسایی‌شده
-        for box in people_boxes:
-            person_id = self.id_counter
-            self.id_counter += 1
+        if detected and not self.present:
+            self.start_time = current_time
+            self.present = True
 
-            # اگر فرد جدید است، زمان شروع را ثبت کن
-            if person_id not in self.active_people:
-                self.active_people[person_id] = {'box': box, 'start_time': current_time}
+        elif not detected and self.present:
+            self.total_time += current_time - self.start_time
+            self.present = False
+            self.start_time = None
 
-            new_active_people[person_id] = self.active_people[person_id]
-            elapsed = int(current_time - new_active_people[person_id]['start_time'])
-            draw_timer(frame, box, elapsed)
+    def draw_overlays(self, frame):
+        elapsed = 0
+        if self.present:
+            elapsed = time.time() - self.start_time + self.total_time
+        else:
+            elapsed = self.total_time
 
-        # به‌روزرسانی لیست افراد فعال
-        self.active_people = new_active_people
-        return frame
+        return draw_timer(frame, elapsed)
+
+    def save_logs(self):
+        if not LOGGING_ENABLED:
+            return
+
+        os.makedirs("output", exist_ok=True)
+        with open("output/logs.csv", "a", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([get_day_time_string(), round(self.total_time, 2)])
