@@ -3,6 +3,7 @@ from core.tracker import PresenceTracker
 import cv2
 import time
 
+
 def main():
     cap = cv2.VideoCapture(0)
     detector = PersonDetector()
